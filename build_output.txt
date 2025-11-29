@@ -1,0 +1,22 @@
+# github.com/owner/go-cms/internal/core/usecases/audit
+internal\core\usecases\audit\audit_usecase.go:27:47: not enough arguments in call to errors.New
+	have (string, string)
+	want (string, string, int)
+internal\core\usecases\audit\audit_usecase.go:50:52: not enough arguments in call to errors.New
+	have (string, string)
+	want (string, string, int)
+internal\core\usecases\audit\audit_usecase.go:55:56: not enough arguments in call to errors.Wrap
+	have (error, string, string)
+	want (error, string, string, int)
+internal\core\usecases\audit\audit_usecase.go:64:52: not enough arguments in call to errors.New
+	have (string, string)
+	want (string, string, int)
+internal\core\usecases\audit\audit_usecase.go:77:52: not enough arguments in call to errors.New
+	have (string, string)
+	want (string, string, int)
+internal\core\usecases\audit\audit_usecase.go:81:52: not enough arguments in call to errors.New
+	have (string, string)
+	want (string, string, int)
+internal\core\usecases\audit\audit_usecase.go:90:47: not enough arguments in call to errors.New
+	have (string, string)
+	want (string, string, int)
