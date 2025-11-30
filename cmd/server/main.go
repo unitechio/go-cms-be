@@ -71,6 +71,8 @@ func main() {
 	}
 	defer logger.Sync()
 
+	log := logger.GetLogger()
+
 	logger.Info("Starting GO CMS application...")
 
 	if err := database.Init(&cfg.Database); err != nil {
@@ -78,8 +80,10 @@ func main() {
 	}
 	defer database.Close()
 
+	db := database.GetDB()
+
 	// Run migrations
-	if err := database.AutoMigrate(database.GetDB()); err != nil {
+	if err := database.AutoMigrate(db); err != nil {
 		logger.Fatal("Failed to run migrations", zap.Error(err))
 	}
 
@@ -89,7 +93,7 @@ func main() {
 	}
 
 	// Seed initial data
-	if err := database.SeedData(database.GetDB()); err != nil {
+	if err := database.SeedData(db); err != nil {
 		logger.Warn("Failed to seed data", zap.Error(err))
 	}
 
@@ -108,27 +112,27 @@ func main() {
 	emailService := email.NewService(&cfg.SMTP)
 
 	// Initialize repositories
-	userRepo := postgres.NewUserRepository(database.GetDB())
-	otpRepo := postgres.NewOTPRepository(database.GetDB())
-	refreshTokenRepo := postgres.NewRefreshTokenRepository(database.GetDB())
+	userRepo := postgres.NewUserRepository(db)
+	otpRepo := postgres.NewOTPRepository(db)
+	refreshTokenRepo := postgres.NewRefreshTokenRepository(db)
 
 	// Initialize authorization repositories
-	moduleRepo := postgres.NewModuleRepository(database.GetDB())
-	departmentRepo := postgres.NewDepartmentRepository(database.GetDB())
-	serviceRepo := postgres.NewServiceRepository(database.GetDB())
-	scopeRepo := postgres.NewScopeRepository(database.GetDB())
-	roleRepo := postgres.NewRoleRepository(database.GetDB())
-	permissionRepo := postgres.NewPermissionRepository(database.GetDB())
+	moduleRepo := postgres.NewModuleRepository(db)
+	departmentRepo := postgres.NewDepartmentRepository(db)
+	serviceRepo := postgres.NewServiceRepository(db)
+	scopeRepo := postgres.NewScopeRepository(db)
+	roleRepo := postgres.NewRoleRepository(db)
+	permissionRepo := postgres.NewPermissionRepository(db)
 
 	// Initialize notification repository
-	notificationRepo := repositories.NewNotificationRepository(database.GetDB())
+	notificationRepo := repositories.NewNotificationRepository(db)
 
 	// Initialize audit log repository
-	auditLogRepo := postgres.NewAuditLogRepository(database.GetDB())
+	auditLogRepo := postgres.NewAuditLogRepository(db)
 
 	// Initialize use cases
 	authUseCase := auth.NewUseCase(userRepo, otpRepo, refreshTokenRepo, cfg, emailService)
-	userUseCase := user.NewUserUseCase(userRepo, roleRepo)
+	userUseCase := user.NewUserUseCase(userRepo, roleRepo, departmentRepo)
 
 	// Initialize authorization use cases
 	moduleUseCase := authorization.NewModuleUseCase(moduleRepo)
@@ -139,12 +143,12 @@ func main() {
 	permissionUseCase := authorization.NewPermissionUseCase(permissionRepo)
 
 	// Initialize WebSocket Hub
-	wsHub := websocket.NewHub(logger.GetLogger())
+	wsHub := websocket.NewHub(log)
 	// Start WebSocket Hub in background
 	go wsHub.(*websocket.Hub).Run()
 
 	// Initialize notification use case
-	notificationUseCase := usecases.NewNotificationUseCase(notificationRepo, wsHub, logger.GetLogger())
+	notificationUseCase := usecases.NewNotificationUseCase(notificationRepo, wsHub, log)
 
 	// Initialize audit log use case
 	auditLogUseCase := audit.NewUseCase(auditLogRepo)
@@ -162,16 +166,15 @@ func main() {
 	permissionHandler := handlers.NewPermissionHandler(permissionUseCase)
 
 	// Initialize notification and WebSocket handlers
-	notificationHandler := handlers.NewNotificationHandler(notificationUseCase, logger.GetLogger())
-	websocketHandler := handlers.NewWebSocketHandler(wsHub, logger.GetLogger())
+	notificationHandler := handlers.NewNotificationHandler(notificationUseCase, log)
+	websocketHandler := handlers.NewWebSocketHandler(wsHub, log)
 
 	// Initialize audit log handler
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogUseCase)
 
 	// Initialize permission checker
-	permissionChecker := middleware.NewPermissionChecker(database.GetDB())
+	permissionChecker := middleware.NewPermissionChecker(db)
 
-	// Setup router
 	r := router.NewRouter(
 		cfg,
 		permissionChecker,

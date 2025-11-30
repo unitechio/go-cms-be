@@ -19,7 +19,6 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// AuthMiddleware validates JWT tokens
 func AuthMiddleware(cfg *config.JWTConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get token from Authorization header

@@ -15,16 +15,27 @@ import (
 
 // UserUseCase handles user business logic
 type UserUseCase struct {
-	userRepo repositories.UserRepository
-	roleRepo repositories.RoleRepository
+	userRepo       repositories.UserRepository
+	roleRepo       repositories.RoleRepository
+	departmentRepo repositories.DepartmentRepository
 }
 
 // NewUserUseCase creates a new user use case
-func NewUserUseCase(userRepo repositories.UserRepository, roleRepo repositories.RoleRepository) *UserUseCase {
+func NewUserUseCase(
+	userRepo repositories.UserRepository,
+	roleRepo repositories.RoleRepository,
+	departmentRepo repositories.DepartmentRepository,
+) *UserUseCase {
 	return &UserUseCase{
-		userRepo: userRepo,
-		roleRepo: roleRepo,
+		userRepo:       userRepo,
+		roleRepo:       roleRepo,
+		departmentRepo: departmentRepo,
 	}
+}
+
+// GetDepartmentByCode retrieves a department by its code
+func (uc *UserUseCase) GetDepartmentByCode(ctx context.Context, code string) (*domain.Department, error) {
+	return uc.departmentRepo.GetByCode(ctx, code)
 }
 
 // CreateUser creates a new user
@@ -114,6 +125,12 @@ func (uc *UserUseCase) UpdateUser(ctx context.Context, id uuid.UUID, updates *do
 	}
 	if updates.Status != "" {
 		existing.Status = updates.Status
+	}
+	if updates.DepartmentID != nil {
+		existing.DepartmentID = updates.DepartmentID
+	}
+	if updates.Position != "" {
+		existing.Position = updates.Position
 	}
 
 	if err := uc.userRepo.Update(ctx, existing); err != nil {

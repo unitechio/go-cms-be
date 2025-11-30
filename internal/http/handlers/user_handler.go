@@ -35,19 +35,67 @@ func NewUserHandler(useCase *user.UserUseCase) *UserHandler {
 // @Failure 500 {object} response.Response
 // @Security BearerAuth
 // @Router /users [post]
+// CreateUser godoc
+// @Summary Create a new user
+// @Description Create a new user in the system
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body CreateUserRequest true "User creation request"
+// @Success 201 {object} response.Response{data=domain.User}
+// @Failure 400 {object} response.Response
+// @Failure 409 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Security BearerAuth
+// @Router /users [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	var user domain.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		response.BadRequest(c, "Invalid request body")
+	var req CreateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationError(c, "password is required")
 		return
 	}
 
-	if err := h.useCase.CreateUser(c.Request.Context(), &user); err != nil {
+	// Resolve department name/code to ID if provided
+	var departmentID *uint
+	if req.Department != "" {
+		// User requested to use code for better reliability
+		dept, err := h.useCase.GetDepartmentByCode(c.Request.Context(), req.Department)
+		if err != nil {
+			response.BadRequest(c, "Invalid department code: "+req.Department)
+			return
+		}
+		departmentID = &dept.ID
+	}
+
+	// Convert DTO to domain model
+	user := req.ToUser(departmentID)
+
+	// Create user
+	if err := h.useCase.CreateUser(c.Request.Context(), user); err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.Created(c, user)
+	// Assign roles if provided
+	if len(req.RoleIDs) > 0 {
+		for _, roleID := range req.RoleIDs {
+			if err := h.useCase.AssignRole(c.Request.Context(), user.ID, roleID); err != nil {
+				// Log error but don't fail the entire request
+				// The user is already created
+				response.Error(c, err)
+				return
+			}
+		}
+	}
+
+	// Reload user with relationships
+	createdUser, err := h.useCase.GetUser(c.Request.Context(), user.ID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Created(c, createdUser)
 }
 
 // GetUser godoc
@@ -78,9 +126,6 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 	response.Success(c, user)
 }
 
-// ListUsers godoc
-// @Summary List all users
-// @Description Get a list of all users with optional filters
 // @Tags users
 // @Accept json
 // @Produce json

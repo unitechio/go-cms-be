@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config holds all configuration for the application
 type Config struct {
 	Server     ServerConfig
 	Database   DatabaseConfig
@@ -25,7 +24,6 @@ type Config struct {
 	Pagination PaginationConfig
 }
 
-// ServerConfig holds server configuration
 type ServerConfig struct {
 	Host         string
 	Port         int
@@ -33,7 +31,6 @@ type ServerConfig struct {
 	WriteTimeout time.Duration
 }
 
-// DatabaseConfig holds database configuration
 type DatabaseConfig struct {
 	Host            string
 	Port            int
@@ -46,7 +43,6 @@ type DatabaseConfig struct {
 	ConnMaxLifetime time.Duration
 }
 
-// RedisConfig holds Redis configuration
 type RedisConfig struct {
 	Host     string
 	Port     int
@@ -55,7 +51,6 @@ type RedisConfig struct {
 	PoolSize int
 }
 
-// MinIOConfig holds MinIO configuration
 type MinIOConfig struct {
 	Endpoint  string
 	AccessKey string
@@ -64,7 +59,6 @@ type MinIOConfig struct {
 	Bucket    string
 }
 
-// JWTConfig holds JWT configuration
 type JWTConfig struct {
 	Secret             string
 	AccessTokenExpire  time.Duration

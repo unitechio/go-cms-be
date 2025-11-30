@@ -23,6 +23,7 @@ type DepartmentRepository interface {
 	Create(ctx context.Context, department *domain.Department) error
 	GetByID(ctx context.Context, id uint) (*domain.Department, error)
 	GetByCode(ctx context.Context, code string) (*domain.Department, error)
+	GetByName(ctx context.Context, name string) (*domain.Department, error)
 	List(ctx context.Context, params pagination.Params) (*pagination.Result[domain.Department], error)
 	ListByModule(ctx context.Context, moduleID uint) ([]domain.Department, error)
 	Update(ctx context.Context, department *domain.Department) error

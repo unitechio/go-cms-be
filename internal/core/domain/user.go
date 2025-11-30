@@ -59,6 +59,8 @@ type User struct {
 	LastName         string     `gorm:"size:100" json:"last_name"`
 	Phone            string     `gorm:"size:20" json:"phone"`
 	Avatar           string     `json:"avatar"`
+	DepartmentID     *uint      `gorm:"index" json:"department_id,omitempty"` // Foreign key to departments table
+	Position         string     `gorm:"size:100" json:"position"`             // Job title/position
 	Status           UserStatus `gorm:"type:varchar(20);default:'pending'" json:"status"`
 	EmailVerified    bool       `gorm:"default:false" json:"email_verified"`
 	EmailVerifiedAt  *time.Time `json:"email_verified_at,omitempty"`
@@ -68,6 +70,7 @@ type User struct {
 	LastLoginIP      string     `gorm:"size:45" json:"last_login_ip,omitempty"`
 
 	// Relationships
+	Department  *Department  `gorm:"foreignKey:DepartmentID" json:"department,omitempty"`
 	Roles       []Role       `gorm:"many2many:user_roles;" json:"roles,omitempty"`
 	Permissions []Permission `gorm:"many2many:user_permissions;" json:"permissions,omitempty"`
 	Posts       []Post       `gorm:"foreignKey:AuthorID" json:"posts,omitempty"`

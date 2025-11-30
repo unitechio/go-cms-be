@@ -75,6 +75,8 @@ func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 // List lists users with offset pagination
 func (r *userRepository) List(ctx context.Context, filter repositories.UserFilter, page *pagination.OffsetPagination) ([]*domain.User, int64, error) {
+	logger.Info("ListUsers repo called", zap.Any("filter", filter), zap.Any("page", page))
+
 	var users []*domain.User
 	var total int64
 
@@ -87,12 +89,14 @@ func (r *userRepository) List(ctx context.Context, filter repositories.UserFilte
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, errors.Wrap(err, errors.ErrCodeDatabaseError, "failed to count users", 500)
 	}
+	logger.Info("ListUsers total count", zap.Int64("total", total))
 
 	// Apply pagination
 	offset := (page.Page - 1) * page.Limit
 	if err := query.Offset(offset).Limit(page.Limit).Find(&users).Error; err != nil {
 		return nil, 0, errors.Wrap(err, errors.ErrCodeDatabaseError, "failed to list users", 500)
 	}
+	logger.Info("ListUsers found count", zap.Int("count", len(users)))
 
 	return users, total, nil
 }
@@ -162,8 +166,13 @@ func (r *userRepository) applyFilters(query *gorm.DB, filter repositories.UserFi
 		query = query.Where("id IN ?", filter.IDs)
 	}
 
-	if filter.RoleID != nil {
-		query = query.Joins("JOIN user_roles ON users.id = user_roles.user_id").
+	// if filter.RoleID != nil {
+	// 	query = query.Joins("JOIN user_roles ON users.id = user_roles.user_id").
+	// 		Where("user_roles.role_id = ?", *filter.RoleID)
+	// }
+	if filter.RoleID != nil && *filter.RoleID > 0 {
+		query = query.
+			Joins("LEFT JOIN user_roles ON users.id = user_roles.user_id").
 			Where("user_roles.role_id = ?", *filter.RoleID)
 	}
 

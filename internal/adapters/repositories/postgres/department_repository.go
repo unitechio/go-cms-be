@@ -59,6 +59,20 @@ func (r *departmentRepository) GetByCode(ctx context.Context, code string) (*dom
 	return &department, nil
 }
 
+func (r *departmentRepository) GetByName(ctx context.Context, name string) (*domain.Department, error) {
+	var department domain.Department
+	if err := r.db.WithContext(ctx).
+		Where("name = ?", name).
+		Preload("Module").
+		First(&department).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.New(errors.ErrCodeNotFound, "department not found", 404)
+		}
+		return nil, errors.Wrap(err, errors.ErrCodeDatabaseError, "failed to get department by name", 500)
+	}
+	return &department, nil
+}
+
 func (r *departmentRepository) List(ctx context.Context, params pagination.Params) (*pagination.Result[domain.Department], error) {
 	var departments []domain.Department
 	var total int64
