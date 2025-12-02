@@ -63,6 +63,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&domain.ActivityLog{},
 		&domain.EmailTemplate{},
 		&domain.EmailLog{},
+		&domain.Document{},
 	); err != nil {
 		logger.Error("Failed to migrate system tables", zap.Error(err))
 		return err

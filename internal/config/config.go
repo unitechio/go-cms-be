@@ -52,11 +52,11 @@ type RedisConfig struct {
 }
 
 type MinIOConfig struct {
-	Endpoint  string
-	AccessKey string
-	SecretKey string
-	UseSSL    bool
-	Bucket    string
+	Endpoint        string `example:"localhost:9000"`
+	AccessKeyID     string `example:"minioadmin"`
+	SecretAccessKey string
+	UseSSL          bool   `example:"false"`
+	BucketName      string `example:"einfra-crm"`
 }
 
 type JWTConfig struct {
@@ -177,11 +177,11 @@ func Load() (*Config, error) {
 			PoolSize: viper.GetInt("REDIS_POOL_SIZE"),
 		},
 		MinIO: MinIOConfig{
-			Endpoint:  viper.GetString("MINIO_ENDPOINT"),
-			AccessKey: viper.GetString("MINIO_ACCESS_KEY"),
-			SecretKey: viper.GetString("MINIO_SECRET_KEY"),
-			UseSSL:    viper.GetBool("MINIO_USE_SSL"),
-			Bucket:    viper.GetString("MINIO_BUCKET"),
+			Endpoint:        viper.GetString("MINIO_ENDPOINT"),
+			AccessKeyID:     viper.GetString("MINIO_ACCESS_KEY"),
+			SecretAccessKey: viper.GetString("MINIO_SECRET_KEY"),
+			UseSSL:          viper.GetBool("MINIO_USE_SSL"),
+			BucketName:      viper.GetString("MINIO_BUCKET"),
 		},
 		JWT: JWTConfig{
 			Secret:             viper.GetString("JWT_SECRET"),

@@ -28,6 +28,7 @@ type Router struct {
 	notificationHandler *handlers.NotificationHandler
 	websocketHandler    *handlers.WebSocketHandler
 	auditLogHandler     *handlers.AuditLogHandler
+	documentHandler     *handlers.DocumentHandler
 	auditLogUseCase     *audit.UseCase
 }
 
@@ -45,6 +46,7 @@ func NewRouter(
 	notificationHandler *handlers.NotificationHandler,
 	websocketHandler *handlers.WebSocketHandler,
 	auditLogHandler *handlers.AuditLogHandler,
+	documentHandler *handlers.DocumentHandler,
 	auditLogUseCase *audit.UseCase,
 ) *Router {
 	return &Router{
@@ -61,6 +63,7 @@ func NewRouter(
 		notificationHandler: notificationHandler,
 		websocketHandler:    websocketHandler,
 		auditLogHandler:     auditLogHandler,
+		documentHandler:     documentHandler,
 		auditLogUseCase:     auditLogUseCase,
 	}
 }
@@ -222,6 +225,35 @@ func (r *Router) Setup() *gin.Engine {
 				notifications.GET("", middleware.AuthorizeMiddleware(r.permissionChecker, middleware.PermissionAdminUsersRead), r.notificationHandler.GetAllNotifications)
 				notifications.POST("", middleware.AuthorizeMiddleware(r.permissionChecker, middleware.PermissionAdminUsersRead), r.notificationHandler.CreateNotification)
 				notifications.POST("/broadcast", middleware.AuthorizeMiddleware(r.permissionChecker, middleware.PermissionAdminUsersRead), r.notificationHandler.BroadcastNotification)
+			}
+			document := protected.Group("/documents")
+			{
+				// Document CRUD
+				document.POST("/upload", r.documentHandler.UploadDocument)
+				document.GET("/list", r.documentHandler.GetDocuments)
+				document.GET("/entity/:type/:id", r.documentHandler.GetDocumentsByEntity)
+				document.GET("/:id", r.documentHandler.GetDocumentByID)
+				document.GET("/code/:code", r.documentHandler.GetDocumentByCode)
+				document.GET("/view/:id", r.documentHandler.ViewDocument)
+				document.GET("/view-url/:id", r.documentHandler.GetDocumentViewURL)
+				document.PUT("/:id", r.documentHandler.UpdateDocument)
+				document.DELETE("/:id", r.documentHandler.DeleteDocument)
+				document.GET("/download/:id", r.documentHandler.DownloadDocument)
+
+				// Permissions
+				document.POST("/permissions", r.documentHandler.AddDocumentPermission)
+				document.GET("/:id/permissions", r.documentHandler.GetDocumentPermissions)
+				document.PUT("/permissions/:id", r.documentHandler.UpdateDocumentPermission)
+				document.DELETE("/permissions/:id", r.documentHandler.DeleteDocumentPermission)
+
+				// Comments
+				document.POST("/comments", r.documentHandler.AddDocumentComment)
+				document.GET("/:id/comments", r.documentHandler.GetDocumentComments)
+				document.PUT("/comments/:id", r.documentHandler.UpdateDocumentComment)
+				document.DELETE("/comments/:id", r.documentHandler.DeleteDocumentComment)
+
+				// Versions
+				document.GET("/:id/versions", r.documentHandler.GetDocumentVersions)
 			}
 
 			// WebSocket routes

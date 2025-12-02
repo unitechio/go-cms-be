@@ -170,6 +170,7 @@ func ParseOffsetRequest(page, perPage string, defaultPerPage, maxPerPage int) (*
 	return &OffsetPagination{
 		Page:    pageInt,
 		PerPage: perPageInt,
+		Limit:   perPageInt, // Set Limit as well
 	}, nil
 }
 

@@ -1,0 +1,53 @@
+No config file found, using environment variables and defaults
+2025-11-30T21:24:50.749+0700	INFO	database/postgres.go:52	Database connected successfully	{"host": "localhost", "port": 5432, "database": "go_cms"}
+=== DEBUG USER LIST API ===
+
+
+2025/11/30 21:24:50 [32mD:/Code/OWNER/CMS_BLOG/go-cms-be/cmd/debug_users/main.go:35
+[0m[33m[8.066ms] [34;1m[rows:1][0m SELECT count(*) FROM "users" WHERE "users"."deleted_at" IS NULL
+1. Total users in DB: 3
+
+
+2025/11/30 21:24:50 [32mD:/Code/OWNER/CMS_BLOG/go-cms-be/cmd/debug_users/main.go:42
+[0m[33m[3.724ms] [34;1m[rows:3][0m SELECT * FROM "users" WHERE "users"."deleted_at" IS NULL
+2. Direct query found 3 users:
+   [1] ID=cff6ab95-2089-43bf-9b31-b387e7d347cb, Email=phamtiendat246@gmail.com, Status=active, DeletedAt={0001-01-01 00:00:00 +0000 UTC false}
+   [2] ID=4d90227f-5639-4790-af5c-a947bff00c27, Email=admin@example.com, Status=active, DeletedAt={0001-01-01 00:00:00 +0000 UTC false}
+   [3] ID=7e3b615e-40f3-4ba3-9c24-2eb3d50eca00, Email=phamtienthanh246@gmail.com, Status=active, DeletedAt={0001-01-01 00:00:00 +0000 UTC false}
+
+2025-11-30T21:24:50.763+0700	INFO	postgres/user_repository.go:78	ListUsers repo called	{"filter": {"Email":"","Status":"","Search":"","RoleID":null,"IDs":null}, "page": {"page":1,"per_page":0,"limit":10,"total":0}}
+
+2025/11/30 21:24:50 [32mD:/Code/OWNER/CMS_BLOG/go-cms-be/internal/adapters/repositories/postgres/user_repository.go:89
+[0m[33m[1.061ms] [34;1m[rows:1][0m SELECT count(*) FROM "users" WHERE "users"."deleted_at" IS NULL
+2025-11-30T21:24:50.764+0700	INFO	postgres/user_repository.go:92	ListUsers total count	{"total": 3}
+
+2025/11/30 21:24:50 [32mD:/Code/OWNER/CMS_BLOG/go-cms-be/internal/adapters/repositories/postgres/user_repository.go:96
+[0m[33m[2.675ms] [34;1m[rows:3][0m SELECT * FROM "users" WHERE "users"."deleted_at" IS NULL LIMIT 10
+2025-11-30T21:24:50.767+0700	INFO	postgres/user_repository.go:99	ListUsers found count	{"count": 3}
+3. Repository List method:
+   Total: 3
+   Found: 3 users
+   [1] ID=cff6ab95-2089-43bf-9b31-b387e7d347cb, Email=phamtiendat246@gmail.com, Status=active
+   [2] ID=4d90227f-5639-4790-af5c-a947bff00c27, Email=admin@example.com, Status=active
+   [3] ID=7e3b615e-40f3-4ba3-9c24-2eb3d50eca00, Email=phamtienthanh246@gmail.com, Status=active
+
+2025-11-30T21:24:50.767+0700	INFO	postgres/user_repository.go:78	ListUsers repo called	{"filter": {"Email":"","Status":"","Search":"admin","RoleID":null,"IDs":null}, "page": {"page":1,"per_page":0,"limit":10,"total":0}}
+
+2025/11/30 21:24:50 [32mD:/Code/OWNER/CMS_BLOG/go-cms-be/internal/adapters/repositories/postgres/user_repository.go:89
+[0m[33m[2.143ms] [34;1m[rows:1][0m SELECT count(*) FROM "users" WHERE (email LIKE '%admin%' OR first_name LIKE '%admin%' OR last_name LIKE '%admin%') AND "users"."deleted_at" IS NULL
+2025-11-30T21:24:50.769+0700	INFO	postgres/user_repository.go:92	ListUsers total count	{"total": 1}
+
+2025/11/30 21:24:50 [32mD:/Code/OWNER/CMS_BLOG/go-cms-be/internal/adapters/repositories/postgres/user_repository.go:96
+[0m[33m[3.225ms] [34;1m[rows:1][0m SELECT * FROM "users" WHERE (email LIKE '%admin%' OR first_name LIKE '%admin%' OR last_name LIKE '%admin%') AND "users"."deleted_at" IS NULL LIMIT 10
+2025-11-30T21:24:50.772+0700	INFO	postgres/user_repository.go:99	ListUsers found count	{"count": 1}
+4. Repository List with search='admin':
+   Total: 1
+   Found: 1 users
+   [1] ID=4d90227f-5639-4790-af5c-a947bff00c27, Email=admin@example.com
+
+
+2025/11/30 21:24:50 [32mD:/Code/OWNER/CMS_BLOG/go-cms-be/cmd/debug_users/main.go:95
+[0m[33m[2.142ms] [34;1m[rows:1][0m SELECT count(*) FROM "users" WHERE deleted_at IS NOT NULL
+5. Soft deleted users: 0
+
+=== DEBUG COMPLETE ===

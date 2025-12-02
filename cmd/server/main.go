@@ -18,6 +18,7 @@ import (
 	"github.com/owner/go-cms/internal/core/usecases/audit"
 	"github.com/owner/go-cms/internal/core/usecases/auth"
 	"github.com/owner/go-cms/internal/core/usecases/authorization"
+	"github.com/owner/go-cms/internal/core/usecases/document"
 	"github.com/owner/go-cms/internal/core/usecases/user"
 	"github.com/owner/go-cms/internal/http/handlers"
 	authHandlers "github.com/owner/go-cms/internal/http/handlers/authorization"
@@ -25,7 +26,7 @@ import (
 	"github.com/owner/go-cms/internal/http/router"
 	"github.com/owner/go-cms/internal/infrastructure/cache"
 	"github.com/owner/go-cms/internal/infrastructure/database"
-	"github.com/owner/go-cms/internal/infrastructure/storage"
+	storage "github.com/owner/go-cms/internal/infrastructure/filestorage"
 	"github.com/owner/go-cms/internal/infrastructure/websocket"
 	"github.com/owner/go-cms/pkg/logger"
 	"go.uber.org/zap"
@@ -104,8 +105,9 @@ func main() {
 	defer cache.Close()
 
 	// Initialize MinIO
-	if err := storage.Init(&cfg.MinIO); err != nil {
-		logger.Fatal("Failed to initialize MinIO", zap.Error(err))
+	storage, err := storage.NewMinioStorage(cfg.MinIO)
+	if err != nil {
+		log.Fatal("❌ Failed to initialize storage service: %v", zap.Error(err))
 	}
 
 	// Initialize email service
@@ -129,6 +131,7 @@ func main() {
 
 	// Initialize audit log repository
 	auditLogRepo := postgres.NewAuditLogRepository(db)
+	documentRepo := postgres.NewDocumentRepository(db)
 
 	// Initialize use cases
 	authUseCase := auth.NewUseCase(userRepo, otpRepo, refreshTokenRepo, cfg, emailService)
@@ -142,6 +145,9 @@ func main() {
 	roleUseCase := authorization.NewRoleUseCase(roleRepo, permissionRepo)
 	permissionUseCase := authorization.NewPermissionUseCase(permissionRepo)
 
+	// Initialize document use cases
+	documentUseCase := document.NewDocumentUsecase(documentRepo, storage)
+
 	// Initialize WebSocket Hub
 	wsHub := websocket.NewHub(log)
 	// Start WebSocket Hub in background
@@ -152,7 +158,6 @@ func main() {
 
 	// Initialize audit log use case
 	auditLogUseCase := audit.NewUseCase(auditLogRepo)
-
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authUseCase)
 	userHandler := handlers.NewUserHandler(userUseCase)
@@ -171,7 +176,7 @@ func main() {
 
 	// Initialize audit log handler
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogUseCase)
-
+	documentHandler := handlers.NewDocumentHandler(documentUseCase)
 	// Initialize permission checker
 	permissionChecker := middleware.NewPermissionChecker(db)
 
@@ -189,6 +194,7 @@ func main() {
 		notificationHandler,
 		websocketHandler,
 		auditLogHandler,
+		documentHandler,
 		auditLogUseCase,
 	)
 	engine := r.Setup()

@@ -51,7 +51,7 @@ func NewUserHandler(useCase *user.UserUseCase) *UserHandler {
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ValidationError(c, "password is required")
+		response.ValidationError(c, err.Error())
 		return
 	}
 
