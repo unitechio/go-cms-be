@@ -8,6 +8,7 @@ import (
 	"github.com/owner/go-cms/internal/core/usecases/audit"
 	"github.com/owner/go-cms/internal/http/handlers"
 	authHandlers "github.com/owner/go-cms/internal/http/handlers/authorization"
+	pageBuilderHandlers "github.com/owner/go-cms/internal/http/handlers/page_builder"
 	"github.com/owner/go-cms/internal/http/middleware"
 	"github.com/owner/go-cms/pkg/response"
 	swaggerFiles "github.com/swaggo/files"
@@ -30,6 +31,12 @@ type Router struct {
 	auditLogHandler     *handlers.AuditLogHandler
 	documentHandler     *handlers.DocumentHandler
 	auditLogUseCase     *audit.UseCase
+	// Page Builder handlers
+	pageHandler         *pageBuilderHandlers.PageHandler
+	blockHandler        *pageBuilderHandlers.BlockHandler
+	pageBlockHandler    *pageBuilderHandlers.PageBlockHandler
+	pageVersionHandler  *pageBuilderHandlers.PageVersionHandler
+	themeSettingHandler *pageBuilderHandlers.ThemeSettingHandler
 }
 
 func NewRouter(
@@ -48,6 +55,12 @@ func NewRouter(
 	auditLogHandler *handlers.AuditLogHandler,
 	documentHandler *handlers.DocumentHandler,
 	auditLogUseCase *audit.UseCase,
+	// Page Builder handlers
+	pageHandler *pageBuilderHandlers.PageHandler,
+	blockHandler *pageBuilderHandlers.BlockHandler,
+	pageBlockHandler *pageBuilderHandlers.PageBlockHandler,
+	pageVersionHandler *pageBuilderHandlers.PageVersionHandler,
+	themeSettingHandler *pageBuilderHandlers.ThemeSettingHandler,
 ) *Router {
 	return &Router{
 		config:              cfg,
@@ -65,6 +78,12 @@ func NewRouter(
 		auditLogHandler:     auditLogHandler,
 		documentHandler:     documentHandler,
 		auditLogUseCase:     auditLogUseCase,
+		// Page Builder handlers
+		pageHandler:         pageHandler,
+		blockHandler:        blockHandler,
+		pageBlockHandler:    pageBlockHandler,
+		pageVersionHandler:  pageVersionHandler,
+		themeSettingHandler: themeSettingHandler,
 	}
 }
 
@@ -328,6 +347,47 @@ func (r *Router) Setup() *gin.Engine {
 				scopes.GET("/code/:code", r.scopeHandler.GetScopeByCode)
 				scopes.PUT("/:id", r.scopeHandler.UpdateScope)
 				scopes.DELETE("/:id", r.scopeHandler.DeleteScope)
+			}
+
+			// Page Builder routes
+			pages := protected.Group("/pages")
+			{
+				pages.GET("", r.pageHandler.ListPages)
+				pages.POST("", r.pageHandler.CreatePage)
+				pages.GET("/:id", r.pageHandler.GetPage)
+				pages.PUT("/:id", r.pageHandler.UpdatePage)
+				pages.DELETE("/:id", r.pageHandler.DeletePage)
+				pages.POST("/:id/duplicate", r.pageHandler.DuplicatePage)
+				pages.POST("/:id/publish", r.pageHandler.PublishPage)
+
+				// Page blocks
+				pages.POST("/:pageId/blocks", r.pageBlockHandler.AddBlockToPage)
+				pages.PUT("/:pageId/blocks/:blockId", r.pageBlockHandler.UpdatePageBlock)
+				pages.DELETE("/:pageId/blocks/:blockId", r.pageBlockHandler.RemoveBlockFromPage)
+				pages.PUT("/:pageId/blocks/reorder", r.pageBlockHandler.ReorderBlocks)
+
+				// Page versions
+				pages.GET("/:pageId/versions", r.pageVersionHandler.GetVersionHistory)
+				pages.POST("/:pageId/versions/:versionId/revert", r.pageVersionHandler.RevertToVersion)
+			}
+
+			// Block routes
+			blocks := protected.Group("/blocks")
+			{
+				blocks.GET("", r.blockHandler.ListBlocks)
+				blocks.POST("", r.blockHandler.CreateBlock)
+				blocks.GET("/:id", r.blockHandler.GetBlock)
+				blocks.PUT("/:id", r.blockHandler.UpdateBlock)
+				blocks.DELETE("/:id", r.blockHandler.DeleteBlock)
+			}
+
+			// Theme settings routes
+			themeSettings := protected.Group("/theme-settings")
+			{
+				themeSettings.GET("", r.themeSettingHandler.GetAllThemes)
+				themeSettings.GET("/active", r.themeSettingHandler.GetActiveTheme)
+				themeSettings.PUT("/:id", r.themeSettingHandler.UpdateTheme)
+				themeSettings.POST("/:id/activate", r.themeSettingHandler.ActivateTheme)
 			}
 		}
 	}

@@ -131,7 +131,6 @@ func main() {
 
 	// Initialize audit log repository
 	auditLogRepo := postgres.NewAuditLogRepository(db)
-	documentRepo := postgres.NewDocumentRepository(db)
 
 	// Initialize use cases
 	authUseCase := auth.NewUseCase(userRepo, otpRepo, refreshTokenRepo, cfg, emailService)
@@ -158,6 +157,7 @@ func main() {
 
 	// Initialize audit log use case
 	auditLogUseCase := audit.NewUseCase(auditLogRepo)
+
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authUseCase)
 	userHandler := handlers.NewUserHandler(userUseCase)
@@ -176,7 +176,7 @@ func main() {
 
 	// Initialize audit log handler
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogUseCase)
-	documentHandler := handlers.NewDocumentHandler(documentUseCase)
+
 	// Initialize permission checker
 	permissionChecker := middleware.NewPermissionChecker(db)
 
@@ -196,6 +196,12 @@ func main() {
 		auditLogHandler,
 		documentHandler,
 		auditLogUseCase,
+		// Page Builder handlers
+		pageHandler,
+		blockHandler,
+		pageBlockHandler,
+		pageVersionHandler,
+		themeSettingHandler,
 	)
 	engine := r.Setup()
 
