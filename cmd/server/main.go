@@ -18,9 +18,11 @@ import (
 	"github.com/owner/go-cms/internal/core/usecases/audit"
 	"github.com/owner/go-cms/internal/core/usecases/auth"
 	"github.com/owner/go-cms/internal/core/usecases/authorization"
+	"github.com/owner/go-cms/internal/core/usecases/page_builder"
 	"github.com/owner/go-cms/internal/core/usecases/user"
 	"github.com/owner/go-cms/internal/http/handlers"
 	authHandlers "github.com/owner/go-cms/internal/http/handlers/authorization"
+	pageBuilderHandlers "github.com/owner/go-cms/internal/http/handlers/page_builder"
 	"github.com/owner/go-cms/internal/http/middleware"
 	"github.com/owner/go-cms/internal/http/router"
 	"github.com/owner/go-cms/internal/infrastructure/cache"
@@ -130,6 +132,13 @@ func main() {
 	// Initialize audit log repository
 	auditLogRepo := postgres.NewAuditLogRepository(db)
 
+	// Initialize Page Builder repositories
+	pageRepo := postgres.NewPageRepository(db)
+	blockRepo := postgres.NewBlockRepository(db)
+	pageBlockRepo := postgres.NewPageBlockRepository(db)
+	pageVersionRepo := postgres.NewPageVersionRepository(db)
+	themeSettingRepo := postgres.NewThemeSettingRepository(db)
+
 	// Initialize use cases
 	authUseCase := auth.NewUseCase(userRepo, otpRepo, refreshTokenRepo, cfg, emailService)
 	userUseCase := user.NewUserUseCase(userRepo, roleRepo, departmentRepo)
@@ -153,6 +162,13 @@ func main() {
 	// Initialize audit log use case
 	auditLogUseCase := audit.NewUseCase(auditLogRepo)
 
+	// Initialize Page Builder use cases
+	pageUseCase := page_builder.NewPageUseCase(pageRepo, pageVersionRepo)
+	blockUseCase := page_builder.NewBlockUseCase(blockRepo)
+	pageBlockUseCase := page_builder.NewPageBlockUseCase(pageBlockRepo, blockRepo)
+	pageVersionUseCase := page_builder.NewPageVersionUseCase(pageVersionRepo, pageRepo, pageBlockRepo)
+	themeSettingUseCase := page_builder.NewThemeSettingUseCase(themeSettingRepo)
+
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authUseCase)
 	userHandler := handlers.NewUserHandler(userUseCase)
@@ -172,6 +188,13 @@ func main() {
 	// Initialize audit log handler
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogUseCase)
 
+	// Initialize Page Builder handlers
+	pageHandler := pageBuilderHandlers.NewPageHandler(pageUseCase)
+	blockHandler := pageBuilderHandlers.NewBlockHandler(blockUseCase)
+	pageBlockHandler := pageBuilderHandlers.NewPageBlockHandler(pageBlockUseCase)
+	pageVersionHandler := pageBuilderHandlers.NewPageVersionHandler(pageVersionUseCase)
+	themeSettingHandler := pageBuilderHandlers.NewThemeSettingHandler(themeSettingUseCase)
+
 	// Initialize permission checker
 	permissionChecker := middleware.NewPermissionChecker(db)
 
@@ -190,6 +213,12 @@ func main() {
 		websocketHandler,
 		auditLogHandler,
 		auditLogUseCase,
+		// Page Builder handlers
+		pageHandler,
+		blockHandler,
+		pageBlockHandler,
+		pageVersionHandler,
+		themeSettingHandler,
 	)
 	engine := r.Setup()
 
