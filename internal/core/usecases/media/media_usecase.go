@@ -37,6 +37,10 @@ type UseCase interface {
 	// Media Operations
 	GetPresignedURL(ctx context.Context, id uint, expiry time.Duration) (string, error)
 	GetMediaByType(ctx context.Context, mediaType domain.MediaType) ([]*domain.Media, error)
+
+	// Optimization features
+	UploadWithOptimization(ctx context.Context, file multipart.File, header *multipart.FileHeader) (*domain.Media, error)
+	CleanupUnusedFiles(ctx context.Context, days int) (int, error)
 }
 
 // useCase implements the UseCase interface

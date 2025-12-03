@@ -19,23 +19,26 @@ const (
 // Post represents a content post
 type Post struct {
 	BaseModel
-	Title           string     `gorm:"size:500;not null" json:"title"`
-	Slug            string     `gorm:"uniqueIndex;size:500;not null" json:"slug"`
-	Content         string     `gorm:"type:text" json:"content"`
-	Excerpt         string     `gorm:"type:text" json:"excerpt"`
-	FeaturedImage   string     `json:"featured_image"`
-	Status          PostStatus `gorm:"type:varchar(20);default:'draft'" json:"status"`
-	AuthorID        uuid.UUID  `gorm:"type:uuid;not null" json:"author_id"`
-	PublishedAt     *time.Time `json:"published_at,omitempty"`
-	ScheduledAt     *time.Time `json:"scheduled_at,omitempty"`
-	ViewCount       int64      `gorm:"default:0" json:"view_count"`
-	LikeCount       int64      `gorm:"default:0" json:"like_count"`
-	CommentCount    int64      `gorm:"default:0" json:"comment_count"`
-	MetaTitle       string     `gorm:"size:500" json:"meta_title"`
-	MetaDescription string     `gorm:"type:text" json:"meta_description"`
-	MetaKeywords    string     `json:"meta_keywords"`
-	Tags            string     `json:"tags"`       // JSON array of tags
-	Categories      string     `json:"categories"` // JSON array of category IDs
+	Title               string              `gorm:"size:500;not null" json:"title"`
+	Slug                string              `gorm:"uniqueIndex;size:500;not null" json:"slug"`
+	Content             string              `gorm:"type:text" json:"content"`
+	Excerpt             string              `gorm:"type:text" json:"excerpt"`
+	FeaturedImage       string              `json:"featured_image"`
+	Status              PostStatus          `gorm:"type:varchar(20);default:'draft'" json:"status"`
+	AuthorID            uuid.UUID           `gorm:"type:uuid;not null" json:"author_id"`
+	PublishedAt         *time.Time          `json:"published_at,omitempty"`
+	ScheduledAt         *time.Time          `json:"scheduled_at,omitempty"`
+	ViewCount           int64               `gorm:"default:0" json:"view_count"`
+	LikeCount           int64               `gorm:"default:0" json:"like_count"`
+	CommentCount        int64               `gorm:"default:0" json:"comment_count"`
+	MetaTitle           string              `gorm:"size:500" json:"meta_title"`
+	MetaDescription     string              `gorm:"type:text" json:"meta_description"`
+	MetaKeywords        string              `json:"meta_keywords"`
+	Tags                string              `json:"tags"`       // JSON array of tags
+	Categories          string              `json:"categories"` // JSON array of category IDs
+	TitleTranslations   TranslatableContent `gorm:"type:jsonb" json:"title_translations,omitempty"`
+	ContentTranslations TranslatableContent `gorm:"type:jsonb" json:"content_translations,omitempty"`
+	ExcerptTranslations TranslatableContent `gorm:"type:jsonb" json:"excerpt_translations,omitempty"`
 
 	// Relationships
 	Author User    `gorm:"foreignKey:AuthorID;references:ID" json:"author,omitempty"`
@@ -134,15 +137,17 @@ const (
 // Category represents a content category
 type Category struct {
 	BaseModel
-	Name        string         `gorm:"size:200;not null" json:"name"`
-	Slug        string         `gorm:"uniqueIndex;size:200;not null" json:"slug"`
-	Description string         `gorm:"type:text" json:"description"`
-	ParentID    *uint          `json:"parent_id,omitempty"`
-	Order       int            `gorm:"default:0" json:"order"`
-	Type        CategoryType   `gorm:"type:varchar(20);default:'blog';not null" json:"type"`
-	Status      CategoryStatus `gorm:"type:varchar(20);default:'active';not null" json:"status"`
-	Icon        string         `json:"icon"`
-	Color       string         `gorm:"size:20" json:"color"`
+	Name                    string              `gorm:"size:200;not null" json:"name"`
+	Slug                    string              `gorm:"uniqueIndex;size:200;not null" json:"slug"`
+	Description             string              `gorm:"type:text" json:"description"`
+	ParentID                *uint               `json:"parent_id,omitempty"`
+	Order                   int                 `gorm:"default:0" json:"order"`
+	Type                    CategoryType        `gorm:"type:varchar(20);default:'blog';not null" json:"type"`
+	Status                  CategoryStatus      `gorm:"type:varchar(20);default:'active';not null" json:"status"`
+	Icon                    string              `json:"icon"`
+	Color                   string              `gorm:"size:20" json:"color"`
+	NameTranslations        TranslatableContent `gorm:"type:jsonb" json:"name_translations,omitempty"`
+	DescriptionTranslations TranslatableContent `gorm:"type:jsonb" json:"description_translations,omitempty"`
 
 	// Relationships
 	Parent        *Category  `gorm:"foreignKey:ParentID" json:"parent,omitempty"`

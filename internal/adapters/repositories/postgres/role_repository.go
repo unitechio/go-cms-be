@@ -121,14 +121,39 @@ func (r *roleRepository) GetChildren(ctx context.Context, parentID uint) ([]*dom
 }
 
 func (r *roleRepository) AssignPermission(ctx context.Context, roleID, permissionID uint) error {
+	logger.Info("Assigning permission to role",
+		zap.Uint("roleID", roleID),
+		zap.Uint("permissionID", permissionID))
+
 	rolePermission := domain.RolePermission{
 		RoleID:       roleID,
 		PermissionID: permissionID,
 	}
+
+	// Check if already exists
+	var existing domain.RolePermission
+	err := r.db.WithContext(ctx).
+		Where("role_id = ? AND permission_id = ?", roleID, permissionID).
+		First(&existing).Error
+
+	if err == nil {
+		logger.Info("Permission already assigned to role",
+			zap.Uint("roleID", roleID),
+			zap.Uint("permissionID", permissionID))
+		return nil // Already exists, not an error
+	}
+
 	if err := r.db.WithContext(ctx).Create(&rolePermission).Error; err != nil {
-		logger.Error("Failed to assign permission to role", zap.Error(err))
+		logger.Error("Failed to assign permission to role",
+			zap.Uint("roleID", roleID),
+			zap.Uint("permissionID", permissionID),
+			zap.Error(err))
 		return errors.Wrap(err, errors.ErrCodeDatabaseError, "failed to assign permission", 500)
 	}
+
+	logger.Info("Successfully assigned permission to role",
+		zap.Uint("roleID", roleID),
+		zap.Uint("permissionID", permissionID))
 	return nil
 }
 

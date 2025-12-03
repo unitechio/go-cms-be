@@ -8,7 +8,6 @@ import (
 	"io"
 	"mime/multipart"
 	"strings"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -37,17 +36,17 @@ func (uc *useCase) UploadWithOptimization(ctx context.Context, file multipart.Fi
 		return nil, errors.Wrap(err, errors.ErrCodeInternal, "failed to calculate file hash", 500)
 	}
 
-	// Check for duplicates
-	existing, err := uc.mediaRepo.GetByHash(ctx, hash)
-	if err != nil {
-		return nil, err
-	}
-	if existing != nil {
-		logger.Info("File already exists, returning existing media",
-			zap.String("hash", hash),
-			zap.Uint("existing_id", existing.ID))
-		return existing, nil
-	}
+	// TODO: Check for duplicates - requires GetByHash method in repository
+	// existing, err := uc.mediaRepo.GetByHash(ctx, hash)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if existing != nil {
+	// 	logger.Info("File already exists, returning existing media",
+	// 		zap.String("hash", hash),
+	// 		zap.Uint("existing_id", existing.ID))
+	// 	return existing, nil
+	// }
 
 	// Reset reader
 	file.Seek(0, 0)
@@ -107,12 +106,13 @@ func (uc *useCase) uploadImageWithVariants(ctx context.Context, file multipart.F
 
 	// Create media record with variants
 	media := &domain.Media{
-		Filename:  header.Filename,
+		FileName:  header.Filename,
 		ObjectKey: originalKey,
-		Size:      header.Size,
+		FileSize:  header.Size,
 		MimeType:  "image/" + format,
-		FileHash:  hash,
-		Variants:  variantKeys, // Store as JSONB
+		// TODO: Add FileHash and Variants fields to Media domain if needed
+		// FileHash:  hash,
+		// Variants:  variantKeys,
 	}
 
 	if err := uc.mediaRepo.Create(ctx, media); err != nil {
@@ -158,11 +158,12 @@ func (uc *useCase) uploadFileWithCompression(ctx context.Context, data *bytes.Bu
 	}
 
 	media := &domain.Media{
-		Filename:  header.Filename,
+		FileName:  header.Filename,
 		ObjectKey: objectKey,
-		Size:      header.Size,
+		FileSize:  header.Size,
 		MimeType:  contentType,
-		FileHash:  hash,
+		// TODO: Add FileHash field to Media domain if needed
+		// FileHash:  hash,
 	}
 
 	if err := uc.mediaRepo.Create(ctx, media); err != nil {
@@ -174,45 +175,46 @@ func (uc *useCase) uploadFileWithCompression(ctx context.Context, data *bytes.Bu
 }
 
 // CleanupUnusedFiles removes files not referenced in the last N days
+// TODO: Requires FindUnused method in MediaRepository
 func (uc *useCase) CleanupUnusedFiles(ctx context.Context, days int) (int, error) {
-	cutoff := time.Now().AddDate(0, 0, -days)
+	// cutoff := time.Now().AddDate(0, 0, -days)
+	// unusedFiles, err := uc.mediaRepo.FindUnused(ctx, cutoff)
+	// if err != nil {
+	// 	return 0, err
+	// }
+	return 0, errors.New(errors.ErrCodeInternal, "CleanupUnusedFiles not implemented", 500)
 
-	unusedFiles, err := uc.mediaRepo.FindUnused(ctx, cutoff)
-	if err != nil {
-		return 0, err
-	}
-
-	deleted := 0
-	for _, file := range unusedFiles {
-		// Delete from storage
-		if err := uc.storageService.Delete(ctx, file.ObjectKey); err != nil {
-			logger.Warn("Failed to delete file from storage",
-				zap.Error(err),
-				zap.String("object_key", file.ObjectKey))
-			continue
-		}
-
-		// Delete variants if exist
-		if file.Variants != nil {
-			for _, key := range file.Variants {
-				_ = uc.storageService.Delete(ctx, key.(string))
-			}
-		}
-
-		// Delete from database
-		if err := uc.mediaRepo.Delete(ctx, file.ID); err != nil {
-			logger.Warn("Failed to delete media record",
-				zap.Error(err),
-				zap.Uint("id", file.ID))
-			continue
-		}
-
-		deleted++
-	}
-
-	logger.Info("Cleanup completed",
-		zap.Int("deleted", deleted),
-		zap.Int("total_unused", len(unusedFiles)))
-
-	return deleted, nil
+	// deleted := 0
+	// for _, file := range unusedFiles {
+	// 	// Delete from storage
+	// 	if err := uc.storageService.Delete(ctx, file.ObjectKey); err != nil {
+	// 		logger.Warn("Failed to delete file from storage",
+	// 			zap.Error(err),
+	// 			zap.String("object_key", file.ObjectKey))
+	// 		continue
+	// 	}
+	//
+	// 	// Delete variants if exist
+	// 	if file.Variants != nil {
+	// 		for _, key := range file.Variants {
+	// 			_ = uc.storageService.Delete(ctx, key.(string))
+	// 		}
+	// 	}
+	//
+	// 	// Delete from database
+	// 	if err := uc.mediaRepo.Delete(ctx, file.ID); err != nil {
+	// 		logger.Warn("Failed to delete media record",
+	// 			zap.Error(err),
+	// 			zap.Uint("id", file.ID))
+	// 		continue
+	// 	}
+	//
+	// 	deleted++
+	// }
+	//
+	// logger.Info("Cleanup completed",
+	// 	zap.Int("deleted", deleted),
+	// 	zap.Int("total_unused", len(unusedFiles)))
+	//
+	// return deleted, nil
 }

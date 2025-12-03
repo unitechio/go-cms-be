@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -20,13 +21,22 @@ func NewRoleHandler(useCase *authorization.RoleUseCase) *RoleHandler {
 	return &RoleHandler{useCase: useCase}
 }
 
+// CreateRoleRequest represents the request body for creating a role
+type CreateRoleRequest struct {
+	Name          string `json:"name" binding:"required"`
+	Description   string `json:"description"`
+	PermissionIDs []uint `json:"permission_ids" binding:"required,min=1"`
+	Level         string `json:"level"`
+	ParentID      *uint  `json:"parent_id"`
+}
+
 // CreateRole godoc
 // @Summary Create a new role
 // @Description Create a new role in the system
 // @Tags roles
 // @Accept json
 // @Produce json
-// @Param role body domain.Role true "Role object"
+// @Param role body CreateRoleRequest true "Role object"
 // @Success 201 {object} response.Response{data=domain.Role}
 // @Failure 400 {object} response.Response
 // @Failure 409 {object} response.Response
@@ -34,10 +44,22 @@ func NewRoleHandler(useCase *authorization.RoleUseCase) *RoleHandler {
 // @Security BearerAuth
 // @Router /roles [post]
 func (h *RoleHandler) CreateRole(c *gin.Context) {
-	var role domain.Role
-	if err := c.ShouldBindJSON(&role); err != nil {
-		response.BadRequest(c, "Invalid request body")
+	var req CreateRoleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body: "+err.Error())
 		return
+	}
+
+	role := domain.Role{
+		Name:        req.Name,
+		Description: req.Description,
+		ParentID:    req.ParentID,
+	}
+
+	if req.Level != "" {
+		role.Level = domain.RoleLevel(req.Level)
+	} else {
+		role.Level = domain.RoleLevelAction
 	}
 
 	if err := h.useCase.CreateRole(c.Request.Context(), &role); err != nil {
@@ -45,7 +67,27 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 		return
 	}
 
-	response.Created(c, role)
+	var failedPermissions []uint
+	for _, permID := range req.PermissionIDs {
+		if err := h.useCase.AssignPermission(c.Request.Context(), role.ID, permID); err != nil {
+			failedPermissions = append(failedPermissions, permID)
+			response.Error(c, err)
+			return
+		}
+	}
+
+	if len(failedPermissions) > 0 {
+		response.Error(c, fmt.Errorf("failed to assign permissions: %v", failedPermissions))
+		return
+	}
+
+	completeRole, err := h.useCase.GetRole(c.Request.Context(), role.ID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Created(c, completeRole)
 }
 
 // GetRole godoc
@@ -138,6 +180,15 @@ func (h *RoleHandler) GetRoleHierarchy(c *gin.Context) {
 	response.Success(c, roles)
 }
 
+// UpdateRoleRequest represents the request body for updating a role
+type UpdateRoleRequest struct {
+	Name          *string `json:"name"`
+	Description   *string `json:"description"`
+	PermissionIDs []uint  `json:"permission_ids"`
+	Level         *string `json:"level"`
+	ParentID      *uint   `json:"parent_id"`
+}
+
 // UpdateRole godoc
 // @Summary Update a role
 // @Description Update an existing role
@@ -145,7 +196,7 @@ func (h *RoleHandler) GetRoleHierarchy(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path int true "Role ID"
-// @Param role body domain.Role true "Role update object"
+// @Param role body UpdateRoleRequest true "Role update object"
 // @Success 200 {object} response.Response
 // @Failure 400 {object} response.Response
 // @Failure 403 {object} response.Response
@@ -160,10 +211,24 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	var updates domain.Role
-	if err := c.ShouldBindJSON(&updates); err != nil {
-		response.BadRequest(c, "Invalid request body")
+	var req UpdateRoleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body: "+err.Error())
 		return
+	}
+
+	updates := domain.Role{}
+	if req.Name != nil {
+		updates.Name = *req.Name
+	}
+	if req.Description != nil {
+		updates.Description = *req.Description
+	}
+	if req.Level != nil {
+		updates.Level = domain.RoleLevel(*req.Level)
+	}
+	if req.ParentID != nil {
+		updates.ParentID = req.ParentID
 	}
 
 	if err := h.useCase.UpdateRole(c.Request.Context(), uint(id), &updates); err != nil {
@@ -171,7 +236,43 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"message": "Role updated successfully"})
+	if req.PermissionIDs != nil {
+		currentPerms, err := h.useCase.GetRolePermissions(c.Request.Context(), uint(id))
+		if err != nil {
+			response.Error(c, err)
+			return
+		}
+
+		for _, perm := range currentPerms {
+			if err := h.useCase.RemovePermission(c.Request.Context(), uint(id), perm.ID); err != nil {
+				response.Error(c, err)
+				return
+			}
+		}
+
+		var failedPermissions []uint
+		for _, permID := range req.PermissionIDs {
+			if err := h.useCase.AssignPermission(c.Request.Context(), uint(id), permID); err != nil {
+				failedPermissions = append(failedPermissions, permID)
+				response.Error(c, err)
+				return
+			}
+		}
+
+		if len(failedPermissions) > 0 {
+			fmt.Printf("Failed to assign permissions: %v\n", failedPermissions)
+		} else {
+			fmt.Printf("All %d permissions assigned successfully\n", len(req.PermissionIDs))
+		}
+	}
+
+	updatedRole, err := h.useCase.GetRole(c.Request.Context(), uint(id))
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, updatedRole)
 }
 
 // DeleteRole godoc

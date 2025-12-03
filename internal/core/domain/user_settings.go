@@ -60,12 +60,6 @@ type LanguageSetting struct {
 	Locale string `json:"locale"` // en, vi, fr, etc.
 }
 
-// ThemeSetting represents theme preferences
-type ThemeSetting struct {
-	Mode string `json:"mode"` // light, dark, system
-	Font string `json:"font"` // Inter, Roboto, etc.
-}
-
 // NotificationSetting represents notification preferences
 type NotificationSetting struct {
 	Email     bool   `json:"email"`

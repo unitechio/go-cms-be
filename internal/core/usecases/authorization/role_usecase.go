@@ -170,15 +170,12 @@ func (uc *RoleUseCase) GetRolePermissions(ctx context.Context, roleID uint) ([]*
 	return permissions, nil
 }
 
-// AssignPermission assigns a permission to a role
 func (uc *RoleUseCase) AssignPermission(ctx context.Context, roleID, permissionID uint) error {
-	// Verify role exists
 	_, err := uc.roleRepo.GetByID(ctx, roleID)
 	if err != nil {
 		return err
 	}
 
-	// Verify permission exists
 	_, err = uc.permissionRepo.GetByID(ctx, permissionID)
 	if err != nil {
 		return err
