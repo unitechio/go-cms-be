@@ -31,6 +31,7 @@ type Router struct {
 	auditLogHandler     *handlers.AuditLogHandler
 	documentHandler     *handlers.DocumentHandler
 	auditLogUseCase     *audit.UseCase
+	categoryHandler     *handlers.CategoryHandler
 	// Page Builder handlers
 	pageHandler         *pageBuilderHandlers.PageHandler
 	blockHandler        *pageBuilderHandlers.BlockHandler
@@ -55,6 +56,7 @@ func NewRouter(
 	auditLogHandler *handlers.AuditLogHandler,
 	documentHandler *handlers.DocumentHandler,
 	auditLogUseCase *audit.UseCase,
+	categoryHandler *handlers.CategoryHandler,
 	// Page Builder handlers
 	pageHandler *pageBuilderHandlers.PageHandler,
 	blockHandler *pageBuilderHandlers.BlockHandler,
@@ -78,6 +80,7 @@ func NewRouter(
 		auditLogHandler:     auditLogHandler,
 		documentHandler:     documentHandler,
 		auditLogUseCase:     auditLogUseCase,
+		categoryHandler:     categoryHandler,
 		// Page Builder handlers
 		pageHandler:         pageHandler,
 		blockHandler:        blockHandler,
@@ -194,6 +197,19 @@ func (r *Router) Setup() *gin.Engine {
 				media.GET("/:id", middleware.AuthorizeMiddleware(r.permissionChecker, middleware.PermissionContentMediaRead), r.placeholder("Get Media"))
 				media.DELETE("/:id", middleware.AuthorizeMiddleware(r.permissionChecker, middleware.PermissionContentMediaDelete), r.placeholder("Delete Media"))
 				media.GET("/:id/presigned-url", middleware.AuthorizeMiddleware(r.permissionChecker, middleware.PermissionContentMediaRead), r.placeholder("Get Presigned URL"))
+			}
+
+			// Category management routes
+			categories := protected.Group("/categories")
+			{
+				categories.GET("/tree", r.categoryHandler.GetCategoryTree)
+				categories.GET("/active", r.categoryHandler.GetActiveCategories)
+				categories.GET("", r.categoryHandler.ListCategories)
+				categories.POST("", middleware.AuthorizeMiddleware(r.permissionChecker, middleware.PermissionContentPostsCreate), r.categoryHandler.CreateCategory)
+				categories.GET("/:id", r.categoryHandler.GetCategory)
+				categories.PUT("/:id", middleware.AuthorizeMiddleware(r.permissionChecker, middleware.PermissionContentPostsUpdate), r.categoryHandler.UpdateCategory)
+				categories.DELETE("/:id", middleware.AuthorizeMiddleware(r.permissionChecker, middleware.PermissionContentPostsDelete), r.categoryHandler.DeleteCategory)
+				categories.PUT("/:id/reorder", middleware.AuthorizeMiddleware(r.permissionChecker, middleware.PermissionContentPostsUpdate), r.categoryHandler.ReorderCategory)
 			}
 
 			// Role management routes
@@ -361,14 +377,14 @@ func (r *Router) Setup() *gin.Engine {
 				pages.POST("/:id/publish", r.pageHandler.PublishPage)
 
 				// Page blocks
-				pages.POST("/:pageId/blocks", r.pageBlockHandler.AddBlockToPage)
-				pages.PUT("/:pageId/blocks/:blockId", r.pageBlockHandler.UpdatePageBlock)
-				pages.DELETE("/:pageId/blocks/:blockId", r.pageBlockHandler.RemoveBlockFromPage)
-				pages.PUT("/:pageId/blocks/reorder", r.pageBlockHandler.ReorderBlocks)
+				pages.POST("/:id/blocks", r.pageBlockHandler.AddBlockToPage)
+				pages.PUT("/:id/blocks/:blockId", r.pageBlockHandler.UpdatePageBlock)
+				pages.DELETE("/:id/blocks/:blockId", r.pageBlockHandler.RemoveBlockFromPage)
+				pages.PUT("/:id/blocks/reorder", r.pageBlockHandler.ReorderBlocks)
 
 				// Page versions
-				pages.GET("/:pageId/versions", r.pageVersionHandler.GetVersionHistory)
-				pages.POST("/:pageId/versions/:versionId/revert", r.pageVersionHandler.RevertToVersion)
+				pages.GET("/:id/versions", r.pageVersionHandler.GetVersionHistory)
+				pages.POST("/:id/versions/:versionId/revert", r.pageVersionHandler.RevertToVersion)
 			}
 
 			// Block routes

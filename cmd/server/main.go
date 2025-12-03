@@ -19,9 +19,11 @@ import (
 	"github.com/owner/go-cms/internal/core/usecases/auth"
 	"github.com/owner/go-cms/internal/core/usecases/authorization"
 	"github.com/owner/go-cms/internal/core/usecases/document"
+	"github.com/owner/go-cms/internal/core/usecases/page_builder"
 	"github.com/owner/go-cms/internal/core/usecases/user"
 	"github.com/owner/go-cms/internal/http/handlers"
 	authHandlers "github.com/owner/go-cms/internal/http/handlers/authorization"
+	pageBuilderHandlers "github.com/owner/go-cms/internal/http/handlers/page_builder"
 	"github.com/owner/go-cms/internal/http/middleware"
 	"github.com/owner/go-cms/internal/http/router"
 	"github.com/owner/go-cms/internal/infrastructure/cache"
@@ -112,6 +114,11 @@ func main() {
 
 	// Initialize email service
 	emailService := email.NewService(&cfg.SMTP)
+	pageRepo := postgres.NewPageRepository(db)
+	blockRepo := postgres.NewBlockRepository(db)
+	pageBlockRepo := postgres.NewPageBlockRepository(db)
+	pageVersionRepo := postgres.NewPageVersionRepository(db)
+	themeSettingRepo := postgres.NewThemeSettingRepository(db)
 
 	// Initialize repositories
 	userRepo := postgres.NewUserRepository(db)
@@ -125,7 +132,8 @@ func main() {
 	scopeRepo := postgres.NewScopeRepository(db)
 	roleRepo := postgres.NewRoleRepository(db)
 	permissionRepo := postgres.NewPermissionRepository(db)
-
+	documentRepo := postgres.NewDocumentRepository(db)
+	categoryRepo := postgres.NewCategoryRepository(db)
 	// Initialize notification repository
 	notificationRepo := repositories.NewNotificationRepository(db)
 
@@ -146,6 +154,12 @@ func main() {
 
 	// Initialize document use cases
 	documentUseCase := document.NewDocumentUsecase(documentRepo, storage)
+	pageUseCase := page_builder.NewPageUseCase(pageRepo, pageVersionRepo)
+	blockUseCase := page_builder.NewBlockUseCase(blockRepo)
+	pageBlockUseCase := page_builder.NewPageBlockUseCase(pageBlockRepo, blockRepo)
+	pageVersionUseCase := page_builder.NewPageVersionUseCase(pageVersionRepo, pageRepo, pageBlockRepo)
+	themeSettingUseCase := page_builder.NewThemeSettingUseCase(themeSettingRepo)
+	categoryUseCase := usecases.NewCategoryUseCase(categoryRepo)
 
 	// Initialize WebSocket Hub
 	wsHub := websocket.NewHub(log)
@@ -170,12 +184,22 @@ func main() {
 	roleHandler := handlers.NewRoleHandler(roleUseCase)
 	permissionHandler := handlers.NewPermissionHandler(permissionUseCase)
 
+	// Initialize document handler
+	documentHandler := handlers.NewDocumentHandler(documentUseCase)
+	pageHandler := pageBuilderHandlers.NewPageHandler(pageUseCase)
+	blockHandler := pageBuilderHandlers.NewBlockHandler(blockUseCase)
+	pageBlockHandler := pageBuilderHandlers.NewPageBlockHandler(pageBlockUseCase)
+	pageVersionHandler := pageBuilderHandlers.NewPageVersionHandler(pageVersionUseCase)
+	themeSettingHandler := pageBuilderHandlers.NewThemeSettingHandler(themeSettingUseCase)
 	// Initialize notification and WebSocket handlers
 	notificationHandler := handlers.NewNotificationHandler(notificationUseCase, log)
 	websocketHandler := handlers.NewWebSocketHandler(wsHub, log)
 
 	// Initialize audit log handler
 	auditLogHandler := handlers.NewAuditLogHandler(auditLogUseCase)
+
+	// Initialize category handler
+	categoryHandler := handlers.NewCategoryHandler(categoryUseCase)
 
 	// Initialize permission checker
 	permissionChecker := middleware.NewPermissionChecker(db)
@@ -196,6 +220,7 @@ func main() {
 		auditLogHandler,
 		documentHandler,
 		auditLogUseCase,
+		categoryHandler,
 		// Page Builder handlers
 		pageHandler,
 		blockHandler,

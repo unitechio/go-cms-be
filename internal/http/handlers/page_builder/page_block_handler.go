@@ -28,7 +28,7 @@ func NewPageBlockHandler(pageBlockUseCase *usecases.PageBlockUseCase) *PageBlock
 // @Success 201 {object} response.Response{data=PageBlockResponse}
 // @Router /pages/{pageId}/blocks [post]
 func (h *PageBlockHandler) AddBlockToPage(c *gin.Context) {
-	pageID, err := uuid.Parse(c.Param("pageId"))
+	pageID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		response.BadRequest(c, "Invalid page ID")
 		return
@@ -72,7 +72,7 @@ func (h *PageBlockHandler) AddBlockToPage(c *gin.Context) {
 // @Success 200 {object} response.Response{data=PageBlockResponse}
 // @Router /pages/{pageId}/blocks/{blockId} [put]
 func (h *PageBlockHandler) UpdatePageBlock(c *gin.Context) {
-	pageID, err := uuid.Parse(c.Param("pageId"))
+	pageID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		response.BadRequest(c, "Invalid page ID")
 		return
@@ -139,7 +139,7 @@ func (h *PageBlockHandler) RemoveBlockFromPage(c *gin.Context) {
 // @Success 200 {object} response.Response
 // @Router /pages/{pageId}/blocks/reorder [put]
 func (h *PageBlockHandler) ReorderBlocks(c *gin.Context) {
-	pageID, err := uuid.Parse(c.Param("pageId"))
+	pageID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		response.BadRequest(c, "Invalid page ID")
 		return

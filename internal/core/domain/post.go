@@ -113,20 +113,41 @@ func (PostMedia) TableName() string {
 	return "post_media"
 }
 
+// CategoryType represents the type of category
+type CategoryType string
+
+const (
+	CategoryTypeBlog    CategoryType = "blog"
+	CategoryTypeHeader  CategoryType = "header"
+	CategoryTypeFooter  CategoryType = "footer"
+	CategoryTypeSidebar CategoryType = "sidebar"
+)
+
+// CategoryStatus represents the status of a category
+type CategoryStatus string
+
+const (
+	CategoryStatusActive   CategoryStatus = "active"
+	CategoryStatusInactive CategoryStatus = "inactive"
+)
+
 // Category represents a content category
 type Category struct {
 	BaseModel
-	Name        string `gorm:"uniqueIndex;size:200;not null" json:"name"`
-	Slug        string `gorm:"uniqueIndex;size:200;not null" json:"slug"`
-	Description string `gorm:"type:text" json:"description"`
-	ParentID    *uint  `json:"parent_id,omitempty"`
-	Order       int    `gorm:"default:0" json:"order"`
-	Icon        string `json:"icon"`
-	Color       string `gorm:"size:20" json:"color"`
+	Name        string         `gorm:"size:200;not null" json:"name"`
+	Slug        string         `gorm:"uniqueIndex;size:200;not null" json:"slug"`
+	Description string         `gorm:"type:text" json:"description"`
+	ParentID    *uint          `json:"parent_id,omitempty"`
+	Order       int            `gorm:"default:0" json:"order"`
+	Type        CategoryType   `gorm:"type:varchar(20);default:'blog';not null" json:"type"`
+	Status      CategoryStatus `gorm:"type:varchar(20);default:'active';not null" json:"status"`
+	Icon        string         `json:"icon"`
+	Color       string         `gorm:"size:20" json:"color"`
 
 	// Relationships
-	Parent   *Category  `gorm:"foreignKey:ParentID" json:"parent,omitempty"`
-	Children []Category `gorm:"foreignKey:ParentID" json:"children,omitempty"`
+	Parent        *Category  `gorm:"foreignKey:ParentID" json:"parent,omitempty"`
+	Children      []Category `gorm:"foreignKey:ParentID" json:"children,omitempty"`
+	ChildrenCount int        `gorm:"-" json:"children_count,omitempty"` // Computed field
 }
 
 // TableName specifies the table name for Category

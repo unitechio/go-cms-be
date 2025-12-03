@@ -55,6 +55,18 @@ func AutoMigrate(db *gorm.DB) error {
 		return err
 	}
 
+	// Page Builder tables
+	if err := db.AutoMigrate(
+		&domain.Page{},
+		&domain.Block{},
+		&domain.PageBlock{},
+		&domain.PageVersion{},
+		&domain.ThemeSetting{},
+	); err != nil {
+		logger.Error("Failed to migrate page builder tables", zap.Error(err))
+		return err
+	}
+
 	// System related tables
 	if err := db.AutoMigrate(
 		&domain.AuditLog{},
@@ -119,6 +131,11 @@ func SeedData(db *gorm.DB) error {
 
 	// Seed Users
 	if err := seedUsers(db); err != nil {
+		return err
+	}
+
+	// Seed Categories
+	if err := seedCategories(db); err != nil {
 		return err
 	}
 
@@ -656,5 +673,52 @@ func seedUsers(db *gorm.DB) error {
 	}
 
 	logger.Info("Admin user seeded successfully")
+	return nil
+}
+
+// seedCategories seeds default categories
+func seedCategories(db *gorm.DB) error {
+	categories := []domain.Category{
+		// Blog Categories
+		{Name: "Technology", Slug: "technology", Type: domain.CategoryTypeBlog, Status: domain.CategoryStatusActive, Order: 1},
+		{Name: "Lifestyle", Slug: "lifestyle", Type: domain.CategoryTypeBlog, Status: domain.CategoryStatusActive, Order: 2},
+		{Name: "Travel", Slug: "travel", Type: domain.CategoryTypeBlog, Status: domain.CategoryStatusActive, Order: 3},
+
+		// Header Categories
+		{Name: "Home", Slug: "home", Type: domain.CategoryTypeHeader, Status: domain.CategoryStatusActive, Order: 1},
+		{Name: "About", Slug: "about", Type: domain.CategoryTypeHeader, Status: domain.CategoryStatusActive, Order: 2},
+		{Name: "Contact", Slug: "contact", Type: domain.CategoryTypeHeader, Status: domain.CategoryStatusActive, Order: 3},
+
+		// Footer Categories
+		{Name: "Privacy Policy", Slug: "privacy-policy", Type: domain.CategoryTypeFooter, Status: domain.CategoryStatusActive, Order: 1},
+		{Name: "Terms of Service", Slug: "terms-of-service", Type: domain.CategoryTypeFooter, Status: domain.CategoryStatusActive, Order: 2},
+	}
+
+	for _, cat := range categories {
+		if err := db.Where("slug = ? AND type = ?", cat.Slug, cat.Type).FirstOrCreate(&cat).Error; err != nil {
+			logger.Error("Failed to create category", zap.String("category", cat.Name), zap.Error(err))
+			return err
+		}
+	}
+
+	// Add subcategories for Technology
+	var techCat domain.Category
+	db.Where("slug = ? AND type = ?", "technology", domain.CategoryTypeBlog).First(&techCat)
+
+	if techCat.ID != 0 {
+		subCategories := []domain.Category{
+			{Name: "Programming", Slug: "programming", Type: domain.CategoryTypeBlog, Status: domain.CategoryStatusActive, Order: 1, ParentID: &techCat.ID},
+			{Name: "Gadgets", Slug: "gadgets", Type: domain.CategoryTypeBlog, Status: domain.CategoryStatusActive, Order: 2, ParentID: &techCat.ID},
+		}
+
+		for _, sub := range subCategories {
+			if err := db.Where("slug = ? AND type = ?", sub.Slug, sub.Type).FirstOrCreate(&sub).Error; err != nil {
+				logger.Error("Failed to create subcategory", zap.String("category", sub.Name), zap.Error(err))
+				return err
+			}
+		}
+	}
+
+	logger.Info("Categories seeded successfully")
 	return nil
 }
